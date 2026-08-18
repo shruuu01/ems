@@ -1,0 +1,93 @@
+import React, {useState} from 'react'
+import { CalendarDays, FileText, Loader2, X, Send } from 'lucide-react';
+
+const ApplyLeaveModal = ({open, onClose, onSuccess}) => {
+
+    const [loading, setLoading] = useState(false);
+
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+    }
+
+    if(!open) return null
+    
+  return (
+    <div onClick={onClose} className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm '>
+        <div className='relative bg-white rounded-xl shadow-2xl w-full max-w-md animate-fade-in' onClick={(e)=> e.stopPropagation()}>
+            {/* {Header} */}
+            <div className='flex items-center justify-between p-5 pb-0'>
+                <div>
+                    <h2 className='text-base font-semibold text-slate-800'>Apply for Leave</h2>
+                    <p className='text-xs text-slate-400 mt-0.5'>Submit your leave request for approval</p>
+                </div>
+                <button onClick={onClose} className='p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600'>
+                    <X className="w-4 h-4"/>
+                </button>
+            </div>
+
+            {/* {form} */}
+            <form onSubmit={handleSubmit} className='p-5 space-y-4'>
+                {/* {leave type} */}
+                <div>
+                    <label className='flex items-center gap-2 text-xs font-medium text-slate-700 mb-1.5'>
+                        <FileText className="w-3.5 h-3.5 text-slate-400"/>
+                        Leave Type
+                    </label>
+                    <select name="type" required>
+                        <option value="SICK">Sick Leave</option>
+                        <option value="CASUAL">Casual Leave</option>
+                        <option value="ANNUAL">Annual Leave</option>
+                    </select>
+                </div>
+
+                {/* {duration} */}
+                <div>
+                <label className='flex items-center gap-2 text-xs font-medium text-slate-700 mb-1'>
+                    <CalendarDays className="w-3.5 h-3.5 text-slate-400"/>
+                        Duration
+                </label>
+                <div className='grid grid-cols-2 gap-3'>
+                    <div>
+                        <span className='block text-[11px] text-slate-400 mb-1'>From</span>
+                        <input type="date" name='startDate' required min={minDate} />
+                    </div>
+                    <div>
+                        <span className='block text-[11px] text-slate-400 mb-1'>To</span>
+                        <input type="date" name='endDate' required min={minDate} />
+                    </div>
+                </div>
+                </div>
+
+                {/* {reason} */}
+                <div>
+                    <label className='text-xs font-medium text-slate-700 mb-1.5 block'>
+                        Reason
+                    </label>
+                    <textarea name='reason' required rows={3}
+                    className="resize-none" placeholder="Briefly describe why you need this leave..." />
+                </div>
+
+                {/* {buttons} */}
+                <div className='flex gap-2.5 pt-1'>
+                    <button onClick={onClose} type='button' className='btn-secondary flex-1'>
+                        Cancel
+                    </button>
+
+                    <button onClick={onClose} disabled={loading} type='submit' className='btn-primary flex-1 flex items-center justify-center gap-2'>
+                        {loading ? <Loader2 className='w-3.5 h-3.5 animate-spin'/> : <Send className="w-3.5 h-3.5"/>}
+                        {loading ? "Submitting..." : "Submit"}
+                        
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+  )
+}
+
+export default ApplyLeaveModal
