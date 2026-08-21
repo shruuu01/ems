@@ -6,6 +6,7 @@ import Employee from './../models/Employee.js';
 export const createPayslip = async (req, res) => {
     try{
         const { employeeId, month, year, basicSalary, allowances, deductions } = req.body;
+        
         if(!employeeId || !month || !year || !basicSalary){
             return res.status(400).json({ error: "Missing fields" });
         }
@@ -14,7 +15,7 @@ export const createPayslip = async (req, res) => {
 
         const payslip = await Payslip.create({
             employeeId,
-            month: Number(year),
+            month: Number(month),
             year: Number(year),
             basicSalary: Number(basicSalary),
             allowances: Number(allowances || 0),
@@ -28,14 +29,14 @@ export const createPayslip = async (req, res) => {
     }
 }
 
-// Create payslips
+// Get payslips
 // GET /api/payslips
 export const getPayslips = async (req, res) => {
     try{
         const session = req.session;
         const isAdmin = session.role === "ADMIN";
         if(isAdmin){
-            const payslips = (await Payslip.find().populate("employeeId")).toSorted({ createdAt: -1});
+            const payslips = await Payslip.find().populate("employeeId").sort({ createdAt: -1});
             const data = payslips.map((p)=>{
                 const obj = p.toObject();
                 return {
@@ -57,8 +58,8 @@ export const getPayslips = async (req, res) => {
     }
 }
 
-// Create payslip by ID
-// PATCH /api/payslips/:id
+// Get payslip by ID
+// GET /api/payslips/:id
 export const getPayslipById = async (req, res) => {
     try{
         const payslip = await Payslip.findById(req.params.id).populate("employeeId").lean();
@@ -70,6 +71,7 @@ export const getPayslipById = async (req, res) => {
             id: payslip._id.toString(),
             employee: payslip.employeeId,
         }
+        return res.json(result)
     }catch (error) {
         return res.status(500).json({ error: "Failed" });
     }

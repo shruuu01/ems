@@ -25,7 +25,9 @@ try{
     const now = new Date();
 
     if(!existing){
-       const attendance = await Attendance.create({
+        const isLate = now.getHours() >= 9 && now.getMinutes() > 0;
+
+        const attendance = await Attendance.create({
         employeeId: employee._id,
         date: today,
         checkIn: now,
@@ -54,7 +56,7 @@ try{
         if (workingHours >= 8) dayType = "Full Day";
         else if (workingHours >= 6) dayType = "Three Quarter Day";
         else if (workingHours >= 4) dayType = "Half Day";
-        else dayType = "Shrt Day";
+        else dayType = "Short Day";
         
         existing.workingHours = workingHours;
         existing.dayType = dayType;
@@ -80,7 +82,7 @@ export const getAttendance = async (req, res)=>{
         if (!employee) return res.status(404).json({ error: "Employee not found" });
 
         const limit = parseInt(req.query.limit || 30);
-        const history = (await Attendance.find({employeeId: employee._id})).sort({date: -1}).limit(limit)
+        const history = await Attendance.find({employeeId: employee._id}).sort({date: -1}).limit(limit)
 
         return res.json({
             data: history,

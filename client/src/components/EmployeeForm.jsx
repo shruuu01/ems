@@ -2,14 +2,36 @@ import { useState } from "react";
 import {useNavigate} from "react-router-dom"
 import { DEPARTMENTS } from "../assets/assets";
 import { Loader2Icon } from "lucide-react";
+import { toast } from 'react-hot-toast';
+import api from './../api/axios';
+import { Navigate } from "react-router-dom";
 
 const EmployeeForm = ({initialData, onSuccess, onCancel}) => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
     const isEditMode = !!initialData;
+
     const handleSubmit = async (e)=>{
         e.preventDefault()
+        setLoading(true)
+        const formData = new FormData(e.currentTarget);
+        if(isEditMode){
+            const pwd = formData.get("password")
+            if(!pwd) formData.delete("password")
+        }
+
+        try {
+            const url = isEditMode ? `/employees/${initialData.id}` : "/employees";
+            const method = isEditMode ? "put" : "post";
+            await api[method](url, formData)
+            onSuccess ? onSuccess() : navigate("/employees")
+        } catch (error) {
+            toast.error(err.response?.data?.error || err.message);
+        } finally {
+            setLoading(false);
+        }
     }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl animate-fade-in">
 
@@ -31,10 +53,10 @@ const EmployeeForm = ({initialData, onSuccess, onCancel}) => {
             </div>
             <div>
                 <label className="block mb-2">Join Date</label>
-                <input name="date" name="joinDate" required defaultValue={initialData?.joinDate ? new Date (initialData.joinDate).toISOString().split("T")[0]: ""} />
+                <input type="date" name="joinDate" required defaultValue={initialData?.joinDate ? new Date (initialData.joinDate).toISOString().split("T")[0]: ""} />
             </div>
-            <div>
-                <label className="sm:col-span-2">Bio (Optional)</label>
+            <div className="sm:col-span-2">
+                <label className="block mb-2">Bio (Optional)</label>
                 <textarea name="bio" defaultValue={initialData?.bio} rows={3} className="resize-none" placeholder="Brief description..." />
             </div>
         </div>
@@ -94,10 +116,10 @@ const EmployeeForm = ({initialData, onSuccess, onCancel}) => {
                 <label className="block mb-2">Work Email</label>
                 <input type="email" name="email" required defaultValue={initialData?.email} />
             </div>
-            {isEditMode && (
+            {!isEditMode && (
                 <div>
-                <label className="block mb-2"> Temporary Password</label>
-                <input type="password" name="password" required />
+                    <label className="block mb-2"> Temporary Password</label>
+                    <input type="password" name="password" required />
                 </div>    
             )}
             {isEditMode && (

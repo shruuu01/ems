@@ -2,6 +2,7 @@ import { Inngest } from "inngest";
 import Attendance from "../models/Attendance.js";
 import Employee from './../models/Employee.js';
 import LeaveApplication from './../models/LeaveApplication.js';
+import sendEmail from './../config/nodemailer.js';
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "app-ems" });
@@ -23,13 +24,28 @@ const autoCheckOut = inngest.createFunction(
         const employee = await Employee.findById(employeeId)
 
         //Send reminder email
+        await sendEmail({
+            to: employee.email,
+            subject: "Attendance Check-Out Remainder",
+            body: `<div style="max-width: 600px;">
+                    <h2>Hi ${employee.firstName}, 👋</h2>
+                    <p style="font-size: 16px;">You have a check-in in ${employee.department} today:</p>
+                    <p style="font-size: 18px; font-weight: bold; color: #007bff; margin: 8px 0;">${attendance?.checkIn?.toLocaleTimeString()}</p>
+                    <p style="font-size: 16px;">Please make sure to check-out in one hour.</p>
+                    <p style="font-size: 16px;">If you have any questions, please contact your admin.</p>
+                    <br />
+                    <p style="font-size: 16px;">Best Regards,</p>
+                    <p style="font-size: 16px;">EMS</p>
+                </div>`
+        })
+
 
         //After 10hours, mark attendance as chaecked out with status "LATE"
-        await step.sleepUntil("wait-for-the-1-hour", new Date(newDate().getTime() + 1 * 60 * 60 * 1000))
+        await step.sleepUntil("wait-for-the-1-hour", new Date(new Date().getTime() + 1 * 60 * 60 * 1000))
 
         attendance = await Attendance.findById(attendanceId)
         if(!attendance?.checkOut){
-            attendance.checkOut = new Date(attendance.checkIn).getTime() + 4 * 60 * 60 * 1000;
+            attendance.checkOut = new Date(new Date(attendance.checkIn).getTime() + 4 * 60 * 60 * 1000);
             attendance.workingHours = 4;
             attendance.dayType = "Half Day";
             attendance.status = "LATE";
@@ -47,15 +63,27 @@ const leaveApplicationReminder = inngest.createFunction(
         const { leaveApplicationId } = event.data;
 
         //wait for 24hours
-        await step.sleepUntil("wait-for-the-24-hours", new Date(newDate().getTime() + 24 * 60 * 60 * 1000))
+        await step.sleepUntil("wait-for-the-24-hours", new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
 
-        const LeaveApplication = await LeaveApplication.findById(leaveApplicationId)
+        const leaveApplication = await LeaveApplication.findById(leaveApplicationId)
 
         if (leaveApplication?.status === "PENDING"){
             const employee = await Employee.findById(leaveApplication.employeeId)
 
             //Send reminder email to admin to take action on leave application
-
+            await sendEmail({
+                to: process.env.ADMIN_EMAIL,
+                subject: `Leave Application Reminder`,
+                body: `<div style="max-width: 600px;">
+                <h2>Hi Admin, 👋</h2>
+                <p style="font-size: 16px;">You have a leave application in ${employee.department} today:</p>
+                <p style="font-size: 18px; font-weight: bold; color: #007bff; margin: 8px 0;">${leaveApplication?.startDate?.toLocaleDateString()}</p>
+                <p style="font-size: 16px;">Please make sure to take action on this leave application.</p>
+                <br />
+                <p style="font-size: 16px;">Best Regards,</p>
+                <p style="font-size: 16px;">EMS</p>
+            </div>`
+            })
         }
     }
   
@@ -70,7 +98,7 @@ const attendanceReminderCron = inngest.createFunction(
         const today = await step.run("get-today-date", ()=>{
             const startUTC = new Date(new Date().toLocaleDateString("en-CA", {timeZone: "Asia/Kolkata"}) + "T00:00:00+05:30");
             const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
-            return {startUTC: startUTC.toISOString(), endUTC}
+            return {startUTC: startUTC.toISOString(), endUTC: endUTC.toISOString()}
         })
 
         //Step 2: Get all active, non-deleted employees
@@ -128,6 +156,7 @@ const attendanceReminderCron = inngest.createFunction(
             })
         }
 
+        await Promise.all(emailPromises)
         return {totalActive: activeEmployees.length, onLeave: onLeaveIds.length, checkedIn: checkedInIds.length, absent:absentEmployees.length}
     }
 );

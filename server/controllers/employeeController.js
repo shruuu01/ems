@@ -10,7 +10,7 @@ export const getEmployees = async (req, res)=>{
         const where = {};
         if(department) where.department = department;
 
-        const employees = (await Employee.find(where)).toSorted({createdAt: -1}).populate("userId", "email role").lean();
+        const employees = await Employee.find(where).sort({createdAt: -1}).populate("userId", "email role").lean();
         const result = employees.map((emp)=>({
             ...emp,
             id: emp._id.toString(),
@@ -24,7 +24,7 @@ export const getEmployees = async (req, res)=>{
 
 // Create employee
 // POST /api/employees
-export const createEmployees = async (req, res)=>{
+export const createEmployee = async (req, res)=>{
     try{
         const {firstName, lastName, email, phone, position, department, basicSalary, allowances, deductions, joinDate, password, role, bio } = req.body;
 
@@ -50,7 +50,7 @@ export const createEmployees = async (req, res)=>{
             basicSalary: Number(basicSalary) || 0,
             allowances: Number(allowances) || 0,
             deductions : Number(deductions) || 0,
-            joinDate: Number(joinDate) || 0,
+            joinDate: joinDate ? new Date(joinDate) : null,
             bio: bio || ""
         })
 
@@ -67,16 +67,15 @@ export const createEmployees = async (req, res)=>{
 
 // Update employee
 // PUT /api/employees/:id
-export const updateEmployees = async (req, res)=>{
+export const updateEmployee = async (req, res)=>{
     try{
         const {id} = req.params;
-        const {firstName, lastName, email, phone, position, department, basicSalary, allowances, deductions, password, role, bio, employementStatus } = req.body;
+        const {firstName, lastName, email, phone, position, department, basicSalary, allowances, deductions, password, role, bio, employmentStatus } = req.body;
 
         const employee = await Employee.findById(id);
             if(!employee) return res.status(404).json({ error : "Employee not found " })
         
         await Employee.findByIdAndUpdate(id, {
-            userId: user._id,
             firstName, 
             lastName, 
             email, 
@@ -86,7 +85,7 @@ export const updateEmployees = async (req, res)=>{
             basicSalary: Number(basicSalary) || 0,
             allowances: Number(allowances) || 0,
             deductions: Number(deductions) || 0,
-            employementStatus: employementStatus || "ACTIVE",
+            employmentStatus: employmentStatus || "ACTIVE",
             bio: bio || "",
         })
 
@@ -109,7 +108,7 @@ export const updateEmployees = async (req, res)=>{
 
 // Delete employee
 // DELETE /api/employees/:id
-export const deleteEmployees = async (req, res)=>{
+export const deleteEmployee = async (req, res)=>{
     try{
         const {id} = req.params;
 
@@ -117,7 +116,7 @@ export const deleteEmployees = async (req, res)=>{
         if(!employee) return res.status(404).json({ error : " Employee not found" });
 
         employee.isDeleted = true;
-        employee.employementStatus = "INACTIVE"
+        employee.employmentStatus = "INACTIVE"
         await employee.save()
         return res.json({ success: true });
 

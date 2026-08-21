@@ -37,7 +37,7 @@ export const getDashboard = async (req, res) => {
 
             const today = new Date();
             const [currentMonthAttendance, pendingLeaves, latestPayslip] = await Promise.all([
-                Addendance.countDocuments({
+                Attendance.countDocuments({
                     employeeId: employee._id,
                     date: {
                         $gte: new Date(today.getFullYear(), today.getMonth(), 1),
@@ -49,7 +49,7 @@ export const getDashboard = async (req, res) => {
                     status: "PENDING",
                 }),
                 Payslip.findOne({ employeeId: employee._id }).sort({
-                    cretaedAt: -1 }).lean(),
+                    createdAt: -1 }).lean(),
             ])
 
             return res.json({
