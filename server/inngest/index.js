@@ -91,7 +91,7 @@ const leaveApplicationReminder = inngest.createFunction(
 
 //Cron: Check attendance at 11:30 AM IST (06:00 UTC) and email absent employees
 const attendanceReminderCron = inngest.createFunction(
-    {id : "attendance-reminder-cron", triggers: [{cron: "TZ=Asia/Kolkata 30 11 * * *"}] },
+    {id : "attendance-reminder-cron", triggers: [{cron:"TZ=Asia/Kolkata 30 11 * * *"}] },
      // 06:00 UTC = 11:30 AM IST
     async ({ step }) => {
         // Step 1: Get today's date range (IST)
@@ -130,13 +130,12 @@ const attendanceReminderCron = inngest.createFunction(
         })
 
         //Step 5: Filter absent employees (not on leave & not checked in)
-        const absentEmployees = activeEmployees.filter((emp)=>!onLeaveIds.includes(emp._id) && !checkedInIds.includes(emp._id))
+        const absentEmployees = activeEmployees.filter((emp)=> !onLeaveIds.includes(emp._id) && !checkedInIds.includes(emp._id))
 
         //Step 6: Send reminder emails
-        if(absentEmployees.length > 0 ){
+        if (absentEmployees.length > 0 ){
             await step.run("send-reminder-emails", async ()=> {
                 const emailPromises = absentEmployees.map((emp)=> {
-                    // send email
                     sendEmail({
                         to: emp.email,
                         subject: `Attendance Reminder - Please Mark Your Attendance`,
@@ -153,10 +152,11 @@ const attendanceReminderCron = inngest.createFunction(
                             </div>`
                     })
                 })
+                await Promise.all(emailPromises)
+                return {emailsSent: absentEmployees.length}
             })
         }
 
-        await Promise.all(emailPromises)
         return {totalActive: activeEmployees.length, onLeave: onLeaveIds.length, checkedIn: checkedInIds.length, absent:absentEmployees.length}
     }
 );
